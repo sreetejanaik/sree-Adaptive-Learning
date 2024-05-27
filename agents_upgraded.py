@@ -32,17 +32,20 @@
 #
 # Example Message Flow:
 
-#     Tutor: "Welcome to the math tutor! Let's get started. What areas of math are you interested in?"
-#     Human: "I want to learn about algebra."
-#     Tutor (to ContentProvider): "Please provide a question about algebra."
-#     ContentProvider (to Tutor): "What is the quadratic formula?"
-#     Tutor (to Human): "What is the quadratic formula?"
-#     Human: "x equals negative b plus or minus the square root of b squared minus 4ac, all over 2a"
-#     Tutor (to Evaluator): "Evaluate the answer: 'x equals negative b plus or minus the square root of b squared minus 4ac, all over 2a'"
-#     Evaluator (to Verifier): "The answer is correct."
-#     Verifier (to Tutor): "Confirmed: The answer is correct."
-#     Tutor (to Human): "That's absolutely right! The quadratic formula is x = (-b ± √(b² - 4ac)) / 2a"
-
+    # System: "Welcome to the math tutor! Let's get started. What areas of math are you interested in?"
+    # Human: "I want to learn about algebra."
+    # Teacher: Here is your first lesson
+    # Tutor: Ask the Problem Generator for a question to test the Student based on the Teacher's lesson
+    # Student: Answer the question.
+    # Tutor: Ask the Solution Verifier to check the Answer
+    # Tutor: Ask the Programmer to write a program to visualize the answer
+    # Tutor: Ask the Code Runner to run the program
+    # Tutor: Ask the Learner Model to update itself based on the Student's answer
+    # Tutor: Ask the Level Adapter if the difficulty should be increased, decreased, or remain the same
+    # Tutor: Ask the Motivator to provide motivation to the student
+    # Tutor: Ask the student if they want more test questions
+    # Teacher: Start the next lesson at the Student's request
+#
 import autogen
 #from autogen.agentchat import ChatMessage
 import os

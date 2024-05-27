@@ -4,8 +4,15 @@ import openai
 import os
 import time
 import asyncio
+from typing import List, Dict
+import logging
 import globals
-from agents import LearnerAgent, TutorAgent, ProblemGeneratorAgent, SolutionVerifierAgent, MotifatorAgent, VisualizerAgent, CodeExecutorAgent
+from agents import StudentAgent, KnowledgeTracerAgent, TeacherAgent, TutorAgent,  ProblemGeneratorAgent, SolutionVerifierAgent, \
+                   ProgrammerAgent, CodeRunnerAgent, LearnerModelAgent, LevelAdapterAgent, MotivatorAgent
+from agent_transitions import FSM
+
+logging.basicConfig(filename='debug.log', level=logging.DEBUG, 
+                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 os.environ["AUTOGEN_USE_DOCKER"] = "False"
 
@@ -17,47 +24,91 @@ gpt4_config = {"config_list": config_list, "temperature": 0, "seed": 53}
 globals.input_future = None
 
 # Agents
-learner = LearnerAgent()
+student = StudentAgent()
+knowledge_tracer = KnowledgeTracerAgent()
+teacher = TeacherAgent()
 tutor = TutorAgent()
 problem_generator = ProblemGeneratorAgent()
 solution_verifier = SolutionVerifierAgent()
-motivator = MotifatorAgent()
-visualizer = VisualizerAgent()
-executor = CodeExecutorAgent()
+programmer = ProgrammerAgent()
+code_runner = CodeRunnerAgent()
+learner_model = LearnerModelAgent()
+level_adapter = LevelAdapterAgent()
+motivator = MotivatorAgent()
 
 
-groupchat = autogen.GroupChat(agents=[learner, tutor, problem_generator, solution_verifier, motivator, visualizer,executor], messages=[], max_round=20)
-manager = autogen.GroupChatManager(groupchat=groupchat, llm_config=gpt4_config)
 
+
+# agents_list = [student, knowledge_tracer, teacher, tutor, problem_generator, solution_verifier,
+#               programmer, code_runner, learner_model, level_adapter, motivator]
+agents_dict = {
+    "student": student,
+    "knowledge_tracer": knowledge_tracer,
+    "teacher": teacher,
+    "tutor": tutor,
+    "problem_generator": problem_generator,
+    "solution_verifier": solution_verifier,
+    "programmer": programmer,
+    "code_runner": code_runner,
+    "learner_model": learner_model,
+    "level_adapter": level_adapter,
+    "motivator": motivator
+}
+    
+fsm = FSM(agents_dict)
+
+# Create the GroupChat with agents and a manager
+groupchat = autogen.GroupChat(agents=list(agents_dict.values()), 
+                              messages=[],
+                              max_round=20,
+                              send_introductions=True,
+                              speaker_selection_method=fsm.next_speaker_selector
+                              )
+
+class CustomGroupChatManager(autogen.GroupChatManager):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)  
+
+    def run(self, *args, **kwargs):
+        try:
+            super().run(*args, **kwargs)  # Call the original run method
+        except Exception as e:
+            print(f"Exception occurred: {e}") 
+            # Log the error, send a message to users, etc.
+
+    async def delayed_initiate_chat(self, agent, recipient, message):
+        globals.initiate_chat_task_created = True
+        await asyncio.sleep(1) 
+        await agent.a_initiate_chat(recipient, message=message)
+
+manager = CustomGroupChatManager(groupchat=groupchat)
 
 avatar = {
-    learner.name: "🎓", tutor.name: "🧑‍🏫", problem_generator.name: "❓", 
-    solution_verifier.name: "✅", motivator.name: "🙌", visualizer.name: "📊", executor.name: "🖥️"
-}  
-
+    student.name: "✏️",                 # Pencil
+    knowledge_tracer.name: "🧠",       # Brain
+    teacher.name: "👩‍🏫",                # Female teacher
+    tutor.name: "🧑‍🎓",                  # Person with graduation hat
+    problem_generator.name: "📚",  # Stack of books for problem generation
+    solution_verifier.name: "🔍",  # Magnifying glass for solution verification
+    programmer.name: "👨‍💻",       # Male programmer/coder emoji
+    code_runner.name: "▶️",        # Play button for code execution
+    learner_model.name: "🧠",      # Brain emoji for learner model
+    level_adapter.name: "📈",      # Chart with upwards trend for level adaptation
+    motivator.name: "🏆",          # Trophy emoji for motivation
+}
 
 
 def print_messages(recipient, messages, sender, config):
+    print(f"Messages from: {sender.name} sent to: {recipient.name} | num messages: {len(messages)} | message: {messages[-1]}")
+
     content = messages[-1]['content']
 
-    # Check if the message is from the Problem Generator and intended for the Tutor
-    if sender == problem_generator and recipient == tutor:
-        return False, None  # Don't print or send to chat interface
-
-    # Set the appropriate user for the chat interface
-    if sender == learner:  # Check if the sender is the Learner
-        user_name = "Learner"  # Use "Learner" as the user for their messages
+    if all(key in messages[-1] for key in ['name']):
+        chat_interface.send(content, user=messages[-1]['name'], avatar=avatar[messages[-1]['name']], respond=False)
     else:
-        user_name = sender.name  # Otherwise, use the agent's name
-
-    # Ensure all messages have a 'name' key for proper display
-    if 'name' not in messages[-1]:
-        messages[-1]['name'] = user_name  # Set the correct user name
-
-    print(f"Messages from: {sender.name} sent to: {recipient.name} | num messages: {len(messages)} | message: {messages[-1]}")
-    chat_interface.send(content, user=user_name, avatar=avatar.get(user_name, "🤖"), respond=False)
-    pn.io.push_notebook()   # Force UI update after sending the message
-    return False, None
+        chat_interface.send(content, user=recipient.name, avatar=avatar[recipient.name], respond=False)
+    
+    return False, None  # required to ensure the agent communication flow continues
 
 
 
@@ -69,20 +120,22 @@ for agent in groupchat.agents:
 
 # --- Panel Interface ---
 pn.extension(design="material")
-initiate_chat_task_created = False
 
-async def delayed_initiate_chat(agent, recipient, message):
-    global initiate_chat_task_created
-    initiate_chat_task_created = True
-    await asyncio.sleep(2) 
-    await agent.a_initiate_chat(recipient, message=message)
+
+
+
+# async def callback(contents: str, user: str, instance: pn.chat.ChatInterface):
+#     await tutor.a_initiate_chat(manager, message=contents) 
+
+#     if globals.input_future and not globals.input_future.done():
+#         globals.input_future.set_result(contents)
+
+
 
 
 async def callback(contents: str, user: str, instance: pn.chat.ChatInterface):
-    global initiate_chat_task_created
-
-    if not initiate_chat_task_created:
-        asyncio.create_task(delayed_initiate_chat(learner, tutor, contents))  
+    if not globals.initiate_chat_task_created:
+        asyncio.create_task(manager.delayed_initiate_chat(tutor, manager, contents))  
     else:
         if globals.input_future and not globals.input_future.done():
             globals.input_future.set_result(contents)
@@ -93,7 +146,8 @@ async def callback(contents: str, user: str, instance: pn.chat.ChatInterface):
 chat_interface = pn.chat.ChatInterface(callback=callback)
 
 #Register chat interface with ConversableAgent
-learner.chat_interface = chat_interface
+for agent in groupchat.agents:
+    agent.chat_interface = chat_interface
 
-chat_interface.send("Welcome to the Adaptive Math Tutor! How can I help you today?", user="Tutor", respond=False)
+chat_interface.send("Welcome to the Adaptive Math Tutor! How can I help you today?", user="System", respond=False)
 chat_interface.servable()
