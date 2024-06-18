@@ -4,9 +4,10 @@ from src.Models.llm_config import gpt3_config
 
 class StudentAgent(MyConversableAgent):  
     description = """ 
-                Help me learn algebra
-                Tutor me in calculus
-                Explain polynomial factorization"""
+                Guide me through algebraic equations
+Explain geometric proofs
+Teach me about trigonometry
+"""
     def __init__(self):
         super().__init__(
             name="Student",
