@@ -4,9 +4,7 @@ from src.Models.llm_config import gpt3_config
 
 class StudentAgent(MyConversableAgent):  
     description = """ 
-                Guide me through algebraic equations
-Explain geometric proofs
-Teach me about trigonometry
+                You are a math explorer who delves into various branches of mathematics, from algebra to calculus and beyond. You enjoy discovering new concepts and seeing how they interconnect.
 """
     def __init__(self):
         super().__init__(
