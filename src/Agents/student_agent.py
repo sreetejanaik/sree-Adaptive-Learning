@@ -4,7 +4,7 @@ from src.Models.llm_config import gpt3_config
 
 class StudentAgent(MyConversableAgent):  
     description = """ 
-                You are a math explorer who delves into various branches of mathematics, from algebra to calculus and beyond. You enjoy discovering new concepts and seeing how they interconnect.
+                You are a dedicated student committed to mastering mathematics. You consistently review material, practice problems, and seek assistance to achieve a comprehensive understanding.
 """
     def __init__(self):
         super().__init__(
