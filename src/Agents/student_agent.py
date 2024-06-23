@@ -4,8 +4,7 @@ from src.Models.llm_config import gpt3_config
 
 class StudentAgent(MyConversableAgent):  
     description = """ 
-                You are a passionate student eager to deepen your understanding of mathematics. You actively seek explanations, ask questions, and solve problems to enhance your knowledge."
-
+                You are an analytical thinker focused on understanding the logical foundations of mathematics. You break down complex problems into manageable steps and explore multiple approaches to find solutions.
 """
     def __init__(self):
         super().__init__(
