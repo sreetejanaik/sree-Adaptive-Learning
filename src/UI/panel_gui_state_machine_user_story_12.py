@@ -67,12 +67,20 @@ def create_app():
         agent.chat_interface = chat_interface
         agent.register_reply([autogen.Agent, None], reply_func=print_messages, config={"callback": None})
 
+    # Create the Panel app object with the chat interface
     app = pn.template.BootstrapTemplate(title=globals.APP_NAME)
+
+    # Add the collapsible target setting and goal tracking panels
+    target_setting_panel = create_collapsible_panel("Target Setting", create_target_setting_panel())
+    goal_tracking_panel = create_collapsible_panel("Goal Tracking", create_goal_tracking_panel())
+
     app.main.append(
         pn.Column(
             chat_interface,
-            create_target_setting_panel(),
-            create_progress_tracking_panel()
+            pn.Row(
+                target_setting_panel,
+                goal_tracking_panel
+            )
         )
     )
 
@@ -104,13 +112,25 @@ def create_target_setting_panel():
     
     set_target_button.on_click(set_target)
 
-    return pn.Column(target_input, set_target_button, name='Target Setting')
+    return pn.Column(target_input, set_target_button)
 
-def create_progress_tracking_panel():
-    progress_message = "You are making good progress!"  # Placeholder for dynamic content
-    progress_display = pn.pane.Markdown(f"## {progress_message}")
+def create_goal_tracking_panel():
+    progress = 50  # Example progress value, replace with actual logic
+    goal_input = pn.widgets.TextInput(name='Set Your Goal', placeholder='Enter your goal...')
+    set_goal_button = pn.widgets.Button(name='Set Goal', button_type='success')
+    progress_bar = pn.indicators.Progress(name='Progress', value=progress)
 
-    return pn.Column(progress_display, name='Progress Tracking')
+    def set_goal(event):
+        goal = goal_input.value
+        if goal:
+            chat_interface.send(f"Goal set: {goal}", user="System", respond=False)
+    
+    set_goal_button.on_click(set_goal)
+
+    return pn.Column(goal_input, set_goal_button, progress_bar)
+
+def create_collapsible_panel(title, panel):
+    return pn.Accordion((title, panel), toggle=True)
 
 if __name__ == "__main__":
     app = create_app()

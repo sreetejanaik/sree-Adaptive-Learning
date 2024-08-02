@@ -1,3 +1,5 @@
+# src/UI/panel_gui_state_machine_user_story_10.py
+
 import autogen
 import panel as pn
 import openai
@@ -12,47 +14,40 @@ from src.Agents.chat_manager_fsms import FSM
 from src.Agents.group_chat_manager_agent import CustomGroupChatManager, CustomGroupChat
 from src.UI.avatar import avatar
 
-# logging.basicConfig(filename='debug.log', level=logging.DEBUG, 
-#                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-
 os.environ["AUTOGEN_USE_DOCKER"] = "False"
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 progress_file_path = os.path.join(script_dir, '../../progress.json')
 
 globals.input_future = None
-    
+
 fsm = FSM(agents_dict)
 
-# Create the GroupChat with agents and a manager
-groupchat = CustomGroupChat(agents=list(agents_dict.values()), 
-                              messages=[],
-                              max_round=30,
-                              send_introductions=True,
-                              speaker_selection_method=fsm.next_speaker_selector
-                              )
+groupchat = CustomGroupChat(
+    agents=list(agents_dict.values()), 
+    messages=[], 
+    max_round=30, 
+    send_introductions=True, 
+    speaker_selection_method=fsm.next_speaker_selector
+)
 
+manager = CustomGroupChatManager(
+    groupchat=groupchat,
+    filename=progress_file_path, 
+    is_termination_msg=lambda x: x.get("content", "").rstrip().find("TERMINATE") >= 0
+)
 
-manager = CustomGroupChatManager(groupchat=groupchat,
-                                filename=progress_file_path, 
-                                is_termination_msg=lambda x: x.get("content", "").rstrip().find("TERMINATE") >= 0 )    
-
-
-# --- Panel Interface ---
 def create_app():
-    # --- Panel Interface ---
     pn.extension(design="material")
-
 
     async def callback(contents: str, user: str, instance: pn.chat.ChatInterface):
         if not globals.initiate_chat_task_created:
-            asyncio.create_task(manager.delayed_initiate_chat(tutor, manager, contents))  
+            asyncio.create_task(manager.delayed_initiate_chat(tutor, manager, contents))
         else:
             if globals.input_future and not globals.input_future.done():
                 globals.input_future.set_result(contents)
             else:
                 print("No input being awaited.")
-
 
     chat_interface = pn.chat.ChatInterface(callback=callback)
 
@@ -66,22 +61,29 @@ def create_app():
         else:
             chat_interface.send(content, user=recipient.name, avatar=avatar[recipient.name], respond=False)
         
-        return False, None  # required to ensure the agent communication flow continues
+        return False, None
 
-    # Register chat interface with ConversableAgent
     for agent in groupchat.agents:
         agent.chat_interface = chat_interface
         agent.register_reply([autogen.Agent, None], reply_func=print_messages, config={"callback": None})
 
     # Create the Panel app object with the chat interface
     app = pn.template.BootstrapTemplate(title=globals.APP_NAME)
+
+    # Add the collapsible target setting and goal tracking panels
+    target_setting_panel = create_collapsible_panel("Target Setting", create_target_setting_panel())
+    goal_tracking_panel = create_collapsible_panel("Goal Tracking", create_goal_tracking_panel())
+
     app.main.append(
         pn.Column(
-            chat_interface
+            chat_interface,
+            pn.Row(
+                target_setting_panel,
+                goal_tracking_panel
+            )
         )
     )
 
-        #Load chat history on startup 
     chat_history_messages = manager.get_messages_from_json()
     if chat_history_messages:
         manager.resume(chat_history_messages, 'exit')
@@ -97,12 +99,39 @@ def create_app():
     else:
         chat_interface.send("Welcome to the Adaptive Math Tutor! How can I help you today?", user="System", respond=False)
 
-    
     return app
 
+def create_target_setting_panel():
+    target_input = pn.widgets.TextInput(name='Set Your Target', placeholder='Enter your target...')
+    set_target_button = pn.widgets.Button(name='Set Target', button_type='primary')
+
+    def set_target(event):
+        target = target_input.value
+        if target:
+            chat_interface.send(f"Target set: {target}", user="System", respond=False)
+    
+    set_target_button.on_click(set_target)
+
+    return pn.Column(target_input, set_target_button)
+
+def create_goal_tracking_panel():
+    progress = 50  # Example progress value, replace with actual logic
+    goal_input = pn.widgets.TextInput(name='Set Your Goal', placeholder='Enter your goal...')
+    set_goal_button = pn.widgets.Button(name='Set Goal', button_type='success')
+    progress_bar = pn.indicators.Progress(name='Progress', value=progress)
+
+    def set_goal(event):
+        goal = goal_input.value
+        if goal:
+            chat_interface.send(f"Goal set: {goal}", user="System", respond=False)
+    
+    set_goal_button.on_click(set_goal)
+
+    return pn.Column(goal_input, set_goal_button, progress_bar)
+
+def create_collapsible_panel(title, panel):
+    return pn.Accordion((title, panel), toggle=True)
 
 if __name__ == "__main__":
     app = create_app()
-    #pn.serve(app, debug=True)
     pn.serve(app)
- 
