@@ -71,7 +71,7 @@ def create_app():
     app = pn.template.BootstrapTemplate(title=globals.APP_NAME)
 
     # Add the collapsible target setting and goal tracking panels
-    target_setting_panel = create_collapsible_panel("Target Setting", create_target_setting_panel())
+    target_setting_panel = create_collapsible_panel("Target Setting", create_target_setting_panel(chat_interface))
     goal_tracking_panel = create_collapsible_panel("Goal Tracking", create_goal_tracking_panel())
 
     app.main.append(
@@ -101,33 +101,44 @@ def create_app():
 
     return app
 
-def create_target_setting_panel():
+def create_target_setting_panel(chat_interface):
     target_input = pn.widgets.TextInput(name='Set Your Target', placeholder='Enter your target...')
     set_target_button = pn.widgets.Button(name='Set Target', button_type='primary')
 
     def set_target(event):
         target = target_input.value
         if target:
-            chat_interface.send(f"Target set: {target}", user="System", respond=False)
-    
+            questions = generate_questions(target)
+            question_list = '\n'.join([f"{i+1}. {q}" for i, q in enumerate(questions)])
+            chat_interface.send(f"Target set: {target}. Here are some questions to start with:\n{question_list}", user="System", respond=False)
+            globals.questions = questions
+            globals.completed_questions = 0
+            globals.update_progress()
+
     set_target_button.on_click(set_target)
 
     return pn.Column(target_input, set_target_button)
 
+def generate_questions(target):
+    # Simulate generating diverse questions based on the target
+    # Replace with actual API call to the LLM
+    # For example purposes, we are generating static questions here.
+    questions = [f"What are the multiples of {target}?" for _ in range(10)]
+    return questions
+
 def create_goal_tracking_panel():
-    progress = 50  # Example progress value, replace with actual logic
-    goal_input = pn.widgets.TextInput(name='Set Your Goal', placeholder='Enter your goal...')
-    set_goal_button = pn.widgets.Button(name='Set Goal', button_type='success')
-    progress_bar = pn.indicators.Progress(name='Progress', value=progress)
+    progress_bar = pn.indicators.Progress(name='Progress', value=0)
 
-    def set_goal(event):
-        goal = goal_input.value
-        if goal:
-            chat_interface.send(f"Goal set: {goal}", user="System", respond=False)
-    
-    set_goal_button.on_click(set_goal)
+    def update_progress():
+        if hasattr(globals, 'questions') and hasattr(globals, 'completed_questions'):
+            progress = (globals.completed_questions / len(globals.questions)) * 100
+            progress_bar.value = progress
+        else:
+            progress_bar.value = 0
 
-    return pn.Column(goal_input, set_goal_button, progress_bar)
+    globals.update_progress = update_progress
+
+    return pn.Column(progress_bar)
 
 def create_collapsible_panel(title, panel):
     return pn.Accordion((title, panel), toggle=True)
