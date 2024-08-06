@@ -1,19 +1,27 @@
-from src.Agents.agents import *
+# src/UI/avatar.py
 
+# Define avatars for different roles
 avatar = {
-    student.name: "✏️",                 # Pencil
-    knowledge_tracer.name: "🧠",       # Brain
-    teacher.name: "👩‍🏫",                # Female teacher
-    tutor.name: "🧑‍🎓",                  # Person with graduation hat
-    problem_generator.name: "📚",  # Stack of books for problem generation
-    solution_verifier.name: "🔍",  # Magnifying glass for solution verification
-    programmer.name: "👨‍💻",       # Male programmer/coder emoji
-    code_runner.name: "▶️",        # Play button for code execution
-    learner_model.name: "🧠",      # Brain emoji for learner model
-    level_adapter.name: "📈",      # Chart with upwards trend for level adaptation
-    motivator.name: "🏆",          # Trophy emoji for motivation
+    "student": "path/to/student_avatar.png",   # Placeholder for student avatar
+    "teacher": "path/to/teacher_avatar.png",   # Placeholder for teacher avatar
+    "tutor": "path/to/tutor_avatar.png",       # Placeholder for tutor avatar
+    "system": "path/to/system_avatar.png",     # Placeholder for system avatar
+
+    # Emoji representations
+    "student_emoji": "✏️",                 # Pencil
+    "knowledge_tracer_emoji": "🧠",       # Brain
+    "teacher_emoji": "👩‍🏫",                # Female teacher
+    "tutor_emoji": "🧑‍🎓",                  # Person with graduation hat
+    "problem_generator_emoji": "📚",  # Stack of books for problem generation
+    "solution_verifier_emoji": "🔍",  # Magnifying glass for solution verification
+    "programmer_emoji": "👨‍💻",       # Male programmer/coder emoji
+    "code_runner_emoji": "▶️",        # Play button for code execution
+    "learner_model_emoji": "🧠",      # Brain emoji for learner model
+    "level_adapter_emoji": "📈",      # Chart with upwards trend for level adaptation
+    "motivator_emoji": "🏆",          # Trophy emoji for motivation
 }
 
+# Alternative avatar set
 avatar2 = {
     "Learner": "🎓",        # Graduate cap: Represents the learner
     "Tutor": "👩‍🏫",       # Woman teacher: Represents the tutor
