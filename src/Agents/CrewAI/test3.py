@@ -70,8 +70,52 @@ class MyCustomHandler(BaseCallbackHandler):
     def on_chain_end(self, outputs: Dict[str, Any], **kwargs: Any) -> None:
         chat_interface.send(outputs['output'], user=self.agent_name, avatar=avatars[self.agent_name], respond=False)
 
+# Configuration for GPT-3 and GPT-4
+gpt3_config_list = [{'model': "gpt-3.5-turbo"}]
+gpt4_config_list = [{'model': "gpt-4o"}]
+
+temperature = 0
+max_tokens = 500
+top_p = 0.5
+frequency_penalty = 0.1
+presence_penalty = 0.1
+seed = 53
+
+gpt3_config = {
+    "config_list": gpt3_config_list, 
+    "temperature": temperature,
+    "max_tokens": max_tokens,
+    "top_p": top_p,
+    "frequency_penalty": frequency_penalty,
+    "presence_penalty": presence_penalty,
+    "seed": seed
+}
+
+gpt4_config = {
+    "config_list": gpt4_config_list, 
+    "temperature": temperature,
+    "max_tokens": max_tokens,
+    "top_p": top_p,
+    "frequency_penalty": frequency_penalty,
+    "presence_penalty": presence_penalty,
+    "seed": seed
+}
+
+# Function to create ChatOpenAI instance with config
+def create_chat_openai(config):
+    model = config["config_list"][0]['model']
+    return ChatOpenAI(
+        model=model,
+        temperature=config["temperature"],
+        max_tokens=config["max_tokens"],
+        top_p=config["top_p"],
+        frequency_penalty=config["frequency_penalty"],
+        presence_penalty=config["presence_penalty"],
+        seed=config["seed"]
+    )
+
 # Setting up the language model
-llm = ChatOpenAI(model="gpt-4", max_tokens=4096)
+llm = create_chat_openai(gpt4_config)
 
 # Defining the agents
 student = Agent(
@@ -169,46 +213,25 @@ level_adapter = Agent(
 
 motivator = Agent(
     role='Motivator',
-    backstory="""Motivator provides positive and encouraging feedback to the Student to keep them motivated.
-                 It offers specific praise and acknowledges the Student's effort and progress.""",
-    goal="Provide motivational feedback to keep the Student engaged.",
+    backstory="""Motivator encourages the Student to maintain interest and motivation during the learning process.
+                 It offers positive reinforcement and suggestions for improvement.""",
+    goal="Encourage and motivate the Student during the learning process.",
     llm=llm,
     callbacks=[MyCustomHandler("Motivator")]
 )
 
-# Function to start the crew and execute tasks
+# Function to start the Crew process
 def StartCrew(prompt):
-    # Define tasks dynamically based on the prompt
-    task1 = Task(
-        description=f"Handle the following query: {prompt}",
-        agent=tutor,
-        expected_output="Appropriate response based on the query."
+    process = Process(
+        agents=[student, knowledge_tracer, teacher, tutor, problem_generator, solution_verifier, programmer, code_runner, learner_model, level_adapter, motivator],
+        tasks=[Task(agents='Student', prompt=prompt)],
     )
 
-    task2 = Task(
-        description="Verify the accuracy of the response provided by the Tutor.",
-        agent=solution_verifier,
-        expected_output="Feedback on the response's accuracy.",
-        human_input=True,
-    )
+    crew = Crew(process)
+    crew.run()
 
-    # Establishing the crew with a hierarchical process
-    math_crew = Crew(
-        tasks=[task1, task2],
-        agents=[student, knowledge_tracer, teacher, tutor, problem_generator, solution_verifier,
-                programmer, code_runner, learner_model, level_adapter, motivator],
-        manager_llm=llm,
-        process=Process.hierarchical
-    )
+# Create the chat interface
+chat_interface = pn.pane.ChatInterface(callback=callback, avatar="", height=600, title="Adaptive Tutor")
 
-    try:
-        result = math_crew.kickoff()
-        chat_interface.send("## Final Result\n" + str(result), user="assistant", respond=False)
-    except Exception as e:
-        chat_interface.send(f"## Error\n{str(e)}", user="assistant", respond=False)
-        print(f"Error: {str(e)}")
-
-# Set up the chat interface
-chat_interface = pn.chat.ChatInterface(callback=callback)
-chat_interface.send("Send a message!", user="System", respond=False)
+# Start the server
 chat_interface.servable()

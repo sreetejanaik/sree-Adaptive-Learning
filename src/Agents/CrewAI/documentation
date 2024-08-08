@@ -54,7 +54,14 @@ for crew ai installtion I used the below commands
 First, install Crew AI:
 
 pip install crewai
+
+and necessary packages:
+
+pip install panel crewai langchain-openai langchain-core
+
 Then, install additional tools required by Crew AI:
 
 pip install 'crewai[tools]'
+
+
 Note: If you already have an OpenAI API key, you do not need to use the OPENAI_API_KEY environment variable. Ensure that your API key is correctly configured in the application if needed.

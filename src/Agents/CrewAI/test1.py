@@ -15,7 +15,7 @@ text_area = pn.widgets.TextAreaInput(placeholder="Type your math question here..
 submit_button = pn.widgets.Button(name="Submit")
 
 # Create a button to rerun the last question
-rerun_button = pn.widgets.Button(name="Rerun Last Question")
+rerun_button = pn.widgets.Button(name="", icon='refresh')
 
 # Create a placeholder for displaying results
 result_pane = pn.pane.Markdown("**Response will appear here...**", sizing_mode='stretch_width')
