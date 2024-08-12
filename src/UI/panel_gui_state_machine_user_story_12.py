@@ -13,9 +13,6 @@ from src.Agents.group_chat_manager_agent import CustomGroupChatManager, CustomGr
 from src.UI.avatar import avatar
 from src.UI.goal_tracking import GoalTracker
 
-# logging.basicConfig(filename='debug.log', level=logging.DEBUG, 
-#                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-
 os.environ["AUTOGEN_USE_DOCKER"] = "False"
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -60,7 +57,6 @@ manager = CustomGroupChatManager(
 
 # --- Panel Interface ---
 def create_app():
-    # --- Panel Interface ---
     pn.extension(design="material")
 
     async def callback(contents: str, user: str, instance: pn.chat.ChatInterface):
@@ -159,7 +155,10 @@ def create_goal_tracking_panel() -> pn.Column:
 
 def create_target_setup_panel() -> pn.Column:
     """Creates the target setup panel."""
-    def on_set_target(event):
+    target_input = pn.widgets.TextInput(placeholder='Enter your target here...')
+    set_target_button = pn.widgets.Button(name='Set Target', button_type='primary')
+    
+    async def on_set_target(event):
         target = target_input.value
         if target:
             # Generate questions
@@ -171,13 +170,11 @@ def create_target_setup_panel() -> pn.Column:
                 student_answer = get_student_answer(question)
                 correct = solution_verifier.verify(question, student_answer)
                 if correct:
-                    goal_tracker.update_progress(student_id, 1)  # Update progress by 1 for each correct answer
+                    goal_tracker.update_progress("example_student_id", 1)  # Update progress by 1 for each correct answer
 
             # Refresh the progress display
-            app.main[1] = create_goal_tracking_panel()  # Refresh the goal tracking panel
+            app.main[1][0] = create_goal_tracking_panel()  # Refresh the goal tracking panel
 
-    target_input = pn.widgets.TextInput(placeholder='Enter your target here...')
-    set_target_button = pn.widgets.Button(name='Set Target', button_type='primary')
     set_target_button.on_click(on_set_target)
     
     return pn.Column(
@@ -193,5 +190,4 @@ def get_student_answer(question):
 
 if __name__ == "__main__":
     app = create_app()
-    #pn.serve(app, debug=True)
     pn.serve(app)
