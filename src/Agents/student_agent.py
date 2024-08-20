@@ -4,8 +4,9 @@ from src.Models.llm_config import gpt3_config
 
 class StudentAgent(MyConversableAgent):  
     description = """ 
-                You are an analytical thinker focused on understanding the logical foundations of mathematics. You break down complex problems into manageable steps and explore multiple approaches to find solutions.
-"""
+                      You are a user proxy for a student who wants to learn mathematics.
+                      You display messages received from other Agents that need human input.                      
+                    """
     def __init__(self):
         super().__init__(
             name="Student",
