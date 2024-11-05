@@ -1,20 +1,16 @@
-import asyncio
-import os
-from typing import Dict, List
-
 import autogen
-import openai
 import panel as pn
+import openai
+import os
+import asyncio
 import speech_recognition as sr
-
+from typing import List, Dict
 from src import globals
 from src.Agents.agents import *
 from src.Agents.chat_manager_fsms import FSM
 from src.Agents.group_chat_manager_agent import CustomGroupChatManager, CustomGroupChat
-from src.UI.reactive_chat16 import ReactiveChat
-
+from src.UI.reactive_chat21 import ReactiveChat
 from src.UI.avatar import avatar
-from src.UI.reactive_chat20 import ReactiveChat
 
 os.environ["AUTOGEN_USE_DOCKER"] = "False"
 
@@ -74,11 +70,13 @@ for agent in groupchat.agents:
 manager.get_chat_history_and_initialize_chat(filename=progress_file_path, chat_interface=reactive_chat.learn_tab_interface)
 reactive_chat.update_dashboard()    # Call after history loaded
 
+
 # --- Speech Capture and Processing ---
 def handle_audio_submission(event):
     transcript = recognize_speech_from_mic()
     # Display the transcribed text in the chat interface
     reactive_chat.learn_tab_interface.send(transcript, user="User", avatar="🎤")
+    
 
 # Create app with speech recognition button
 def create_app():    
